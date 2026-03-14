@@ -1,48 +1,50 @@
-'use client';
-import { useState } from 'react';
+'use client'
 
-export default function PatentAssistant() {
-  const [query, setQuery] = useState('');
-  const [result, setResult] = useState('');
-  const [loading, setLoading] = useState(false);
+import { useState } from 'react'
+import SearchForm from '@/components/SearchForm'
+import Results from '@/components/Results'
+import Navbar from '@/components/Navbar'
 
-  const handleSearch = async () => {
-    setLoading(true);
+export default function Home() {
+  const [results, setResults] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const handleSearch = async (query) => {
+    setSearchQuery(query)
+    setLoading(true)
+    setResults(null)
+
     try {
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
-      });
-      const data = await response.json();
-      setResult(data.result || data.error);
-    } catch (err) {
-      setResult("Error connecting to AI.");
+        body: JSON.stringify({ query })
+      })
+
+      const data = await response.json()
+      setResults(data)
+    } catch (error) {
+      console.error('Search error:', error)
+      setResults({ error: 'Search failed. Please try again.' })
+    } finally {
+      setLoading(false)
     }
-    setLoading(false);
-  };
+  }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-4">AI Patent Assistant</h1>
-      <textarea 
-        className="w-full p-4 border rounded mb-4 text-black"
-        placeholder="Describe your invention idea here..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <button 
-        onClick={handleSearch}
-        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-        disabled={loading}
-      >
-        {loading ? 'Analyzing...' : 'Search Patents'}
-      </button>
-      {result && (
-        <div className="mt-8 p-4 bg-gray-100 rounded text-black whitespace-pre-wrap">
-          {result}
-        </div>
-      )}
-    </div>
-  );
+    <main className="min-h-screen bg-secondary">
+      <Navbar />
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <SearchForm onSearch={handleSearch} loading={loading} />
+        {loading && (
+          <div className="text-center py-12">
+            <div className="loading mx-auto mb-4"></div>
+            <p className="text-gray-400">Analyzing patents...</p>
+          </div>
+        )}
+        {results && !loading && <Results data={results} query={searchQuery} />}
+      </div>
+    </main>
+  )
 }
